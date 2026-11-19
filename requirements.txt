@@ -25,3 +25,7 @@ curl_cffi
 # 所以这里显式钉住版本，装完请确认 protobuf 没被降下去。
 protobuf>=5.27
 blackboxprotobuf
+
+# 直播间主播声音转文字（本地语音识别，CPU 可跑；首次使用会自动下载模型，
+# 国内可设环境变量 HF_ENDPOINT=https://hf-mirror.com 走镜像）
+faster-whisper

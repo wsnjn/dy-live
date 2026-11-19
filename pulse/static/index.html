@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pulse Console · 直播数据监听与 AI 陪伴中台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <!-- ============ 背景氛围层 ============ -->
+  <div id="bg" aria-hidden="true">
+    <canvas id="particles"></canvas>
+    <div class="aurora a1"></div>
+    <div class="aurora a2"></div>
+    <div class="aurora a3"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- ============ 顶部灵动岛 ============ -->
+  <header id="island">
+    <div class="island-shell glass-strong" id="islandShell">
+      <div class="island-idle" id="islandIdle">
+        <span class="status-dot" id="islandDot"></span>
+        <span class="island-title" id="islandTitle">Pulse Console</span>
+        <span class="island-sub" id="islandSub">未连接</span>
+      </div>
+      <div class="island-wave" id="islandWave" hidden>
+        <canvas id="waveCanvas"></canvas>
+        <div class="island-mini">
+          <span class="ims"><b id="imsRate">0</b><i>弹幕/分</i></span>
+          <span class="ims"><b id="imsOnline">--</b><i>在线</i></span>
+          <span class="ims"><b id="imsGift">0</b><i>礼物</i></span>
+        </div>
+      </div>
+      <div class="island-alert" id="islandAlert" hidden>
+        <span class="alert-ico">⚠</span>
+        <span class="alert-text" id="islandAlertText">连接异常</span>
+        <button class="alert-btn" id="islandAlertBtn">一键重连</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ 主体三栏 ============ -->
+  <div id="shell">
+    <!-- 左栏：导航 -->
+    <aside id="leftNav" class="glass">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div class="brand-text"><b>Pulse</b><i>Console</i></div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-panel="dashboard"><span class="ni-ico">📊</span><span class="ni-txt">数据监听</span></button>
+        <button class="nav-item locked" data-panel="ai-avatar"><span class="ni-ico">🤖</span><span class="ni-txt">AI 分身</span><span class="ni-lock">🔒</span></button>
+        <button class="nav-item locked" data-panel="companion"><span class="ni-ico">💗</span><span class="ni-txt">AI 伴侣</span><span class="ni-lock">🔒</span></button>
+        <button class="nav-item locked" data-panel="history"><span class="ni-ico">🕘</span><span class="ni-txt">历史复盘</span><span class="ni-lock">🔒</span></button>
+        <button class="nav-item" data-panel="settings"><span class="ni-ico">⚙️</span><span class="ni-txt">设置</span></button>
+      </nav>
+      <div class="nav-foot">
+        <div class="phase-tag">阶段 1 / 3 · 数据监听</div>
+      </div>
+    </aside>
+
+    <!-- 中央：主工作区 -->
+    <main id="workspace">
+      <section class="panel" id="panel-dashboard">
+        <!-- 直播间标签页 -->
+        <div class="room-tabs" id="roomTabs"></div>
+
+        <!-- 空态 -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-ico">📡</div>
+          <div class="empty-title">还没有监听的直播间</div>
+          <div class="empty-sub">在右侧输入直播间链接 / ID，点击「一键监听」开始</div>
+        </div>
+
+        <!-- KPI 总览层 -->
+        <div class="kpi-grid" id="kpiGrid" hidden>
+          <div class="card glass kpi" data-kpi="online">
+            <div class="kpi-label">在线人数</div>
+            <div class="kpi-value mono" id="kpiOnlineVal">0</div>
+            <div class="kpi-sub" id="kpiOnlineSub">--</div>
+          </div>
+          <div class="card glass kpi" data-kpi="fan">
+            <div class="kpi-label">粉丝</div>
+            <div class="kpi-value mono" id="kpiFanVal">0</div>
+            <div class="kpi-sub" id="kpiFanSub">--</div>
+          </div>
+          <div class="card glass kpi" data-kpi="gift">
+            <div class="kpi-label">礼物</div>
+            <div class="kpi-value mono" id="kpiGiftVal">0</div>
+            <div class="kpi-sub" id="kpiGiftSub">--</div>
+          </div>
+          <div class="card glass kpi" data-kpi="chat">
+            <div class="kpi-label">弹幕</div>
+            <div class="kpi-value mono" id="kpiChatVal">0</div>
+            <div class="kpi-sub" id="kpiChatSub">--</div>
+          </div>
+          <div class="card glass kpi" data-kpi="paid">
+            <div class="kpi-label">付费</div>
+            <div class="kpi-value mono" id="kpiPaidVal">0</div>
+            <div class="kpi-sub" id="kpiPaidSub">--</div>
+          </div>
+        </div>
+
+        <!-- 观众 / 粉丝明细（核心） -->
+        <div class="card glass viewer-card" id="viewerCard" hidden>
+          <div class="card-title">观众 / 粉丝明细 <span class="card-sub">实时画像 · 按重要度排序</span></div>
+          <div class="viewer-table">
+            <div class="viewer-head">
+              <span>用户</span><span>等级</span><span>灯牌</span><span>贡献值</span><span>礼物</span><span>弹幕</span><span>最近动态</span>
+            </div>
+            <div class="viewer-list" id="viewerList"></div>
+          </div>
+        </div>
+
+        <!-- 弹幕流（次要） -->
+        <div class="card glass danmaku-card" id="danmakuCard" hidden>
+          <div class="card-title danmaku-head">
+            <span>弹幕流 <span class="card-sub">LIVE</span></span>
+            <div class="danmaku-tools">
+              <button class="chip" id="danmakuFollow" data-on="1">⏸ 暂停跟随</button>
+              <button class="chip" id="danmakuBottom">⤵ 回到底部</button>
+              <button class="chip" id="danmakuClear">🗑 清空</button>
+            </div>
+          </div>
+          <div class="danmaku" id="danmakuList"></div>
+        </div>
+
+        <!-- 趋势 + 词云（底部，次要） -->
+        <div class="bottom-grid">
+          <div class="card glass trend-card" id="trendCard" hidden>
+            <div class="card-title">数据趋势 <span class="card-sub">弹幕·在线·礼物·60s</span></div>
+            <canvas id="trendCanvas"></canvas>
+            <div class="legend" id="trendLegend"></div>
+          </div>
+          <div class="card glass cloud-card" id="cloudCard" hidden>
+            <div class="card-title">高频词云 <span class="card-sub">词大小 = 频率</span></div>
+            <div class="cloud" id="wordcloud"></div>
+          </div>
+        </div>
+      </section>
+      <!-- AI 分身控制台（占位） -->
+      <section class="panel" id="panel-ai-avatar" hidden>
+        <div class="locked-banner">🤖 AI 分身 · 第二阶段模块（当前未激活）</div>
+        <div class="ai-console">
+          <div class="card glass ai-preview">
+            <div class="card-title">分身形象 <span class="card-sub">Live2D / 3D 占位</span></div>
+            <div class="preview-stage">即将上线</div>
+          </div>
+          <div class="card glass ai-config">
+            <div class="card-title">对话管理</div>
+            <div class="config-grid">
+              <div class="cfg-item">🗂 话术库</div>
+              <div class="cfg-item">🔁 自动回复规则</div>
+              <div class="cfg-item">📚 知识库配置</div>
+            </div>
+          </div>
+        </div>
+        <div class="card glass ai-queue">
+          <div class="card-title">弹幕 → AI 回复调度队列</div>
+          <div class="queue-placeholder">激活 AI 分身后，这里将实时显示：哪些弹幕被 AI 处理、回复了什么、耗时多少。</div>
+        </div>
+      </section>
+
+      <!-- AI 伴侣（占位） -->
+      <section class="panel" id="panel-companion" hidden>
+        <div class="locked-banner">💗 AI 伴侣 · 第三阶段模块（当前未激活）</div>
+        <div class="card glass companion-intro">
+          <p>激活后，整体氛围将从「操作台」切换为更柔和温暖的「伴侣模式」。</p>
+          <button class="primary-btn" id="companionWarmBtn">🌙 预览伴侣模式氛围</button>
+        </div>
+      </section>
+
+      <!-- 历史复盘（占位） -->
+      <section class="panel" id="panel-history" hidden>
+        <div class="locked-banner">🕘 历史复盘 · 即将上线</div>
+      </section>
+
+      <!-- 设置 -->
+      <section class="panel" id="panel-settings" hidden>
+        <div class="card glass settings-card">
+          <div class="card-title">显示设置</div>
+          <div class="setting-row"><span>毛玻璃效果</span><button class="switch" id="setGlass" data-on="1"></button></div>
+          <div class="setting-row"><span>背景粒子流</span><button class="switch" id="setParticles" data-on="1"></button></div>
+          <div class="setting-row"><span>伴侣模式氛围（预览）</span><button class="switch" id="setWarm" data-on="0"></button></div>
+          <div class="setting-row"><span>导航提示音</span><button class="switch" id="setSound" data-on="0"></button></div>
+        </div>
+        <div class="card glass settings-card">
+          <div class="card-title">连接信息</div>
+          <div class="info-row"><span>WebSocket</span><code id="infoWs">--</code></div>
+          <div class="info-row"><span>协议</span><code id="infoProto">wss</code></div>
+          <div class="info-row"><span>监听房间数</span><code id="infoRooms">0</code></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 右栏：快捷操作 -->
+    <aside id="rightPanel" class="glass">
+      <div class="rp-title">连接控制</div>
+      <input id="liveInput" class="glass-input" type="text" placeholder="直播间链接 / ID">
+      <div class="rp-row">
+        <button class="primary-btn" id="liveStartBtn">▶ 一键监听</button>
+        <button class="ghost-btn" id="liveStopBtn">■ 停止当前</button>
+      </div>
+      <div class="rp-status"><span class="status-dot sm" id="liveStatusLight"></span><span id="liveStatusText">未连接</span></div>
+
+      <div class="rp-title">快捷操作</div>
+      <div class="rp-grid">
+        <button class="quick-btn" id="btnClear">🧹 清空数据</button>
+        <button class="quick-btn" id="btnExport">📤 导出日志</button>
+        <button class="quick-btn" id="btnShot">📸 截图看板</button>
+        <button class="quick-btn" id="btnMini">🪟 迷你弹幕窗</button>
+      </div>
+
+      <div class="rp-title">AI 模块 <span class="rp-soon">后续阶段</span></div>
+      <div class="rp-grid">
+        <button class="quick-btn disabled" id="aiAvatarShortcut">🤖 AI 分身</button>
+        <button class="quick-btn disabled" id="companionShortcut">💗 AI 伴侣</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ============ 底部状态栏 ============ -->
+  <footer id="statusbar" class="glass">
+    <span class="sb-item"><i class="sb-dot" id="sbProtoDot"></i><b id="sbProtocol">--</b></span>
+    <span class="sb-item">运行 <b class="mono" id="sbUptime">00:00:00</b></span>
+    <span class="sb-item">接收速率 <b class="mono" id="sbRate">0.0</b> msg/s</span>
+    <span class="sb-item">监听 <b class="mono" id="sbRooms">0</b> 个房间</span>
+    <button class="sb-item sb-log" id="sbLog">📜 日志</button>
+    <span class="sb-hint">右键打开主题菜单</span>
+  </footer>
+  <!-- ============ 全屏覆盖层（AI 控制台占位） ============ -->
+  <div id="overlay" hidden>
+    <div class="overlay-inner glass-strong">
+      <div class="overlay-head">
+        <span class="oi-title">Pulse · AI 控制台</span>
+        <button class="ghost-btn" id="overlayClose">✕ 关闭</button>
+      </div>
+      <div class="overlay-body">
+        <div class="overlay-card"><span class="oc-ico">🤖</span><b>AI 分身</b><p>直播 AI 主播操控台<br><i>阶段二 · 未激活</i></p><span class="lock-ico">🔒</span></div>
+        <div class="overlay-card"><span class="oc-ico">💗</span><b>AI 伴侣</b><p>AI 陪伴交互界面<br><i>阶段三 · 未激活</i></p><span class="lock-ico">🔒</span></div>
+      </div>
+      <div class="overlay-note">当前处于第一阶段「直播数据监听」，以上 AI 能力将在后续阶段解锁。</div>
+    </div>
+  </div>
+
+  <!-- ============ 悬浮迷你弹幕窗 ============ -->
+  <div id="miniWindow" class="glass-strong" hidden>
+    <div class="mini-head" id="miniHead">
+      <span class="mini-title">迷你弹幕</span>
+      <div class="mini-btns">
+        <button class="chip mini-chip" id="miniPin">📌 置顶</button>
+        <button class="chip mini-chip" id="miniThrough">👆 穿透</button>
+        <button class="chip mini-chip" id="miniClose">✕</button>
+      </div>
+    </div>
+    <div class="mini-list" id="miniList"></div>
+  </div>
+
+  <!-- ============ 右键菜单 ============ -->
+  <div id="contextMenu" class="glass-strong" hidden>
+    <button class="ctx-item" id="ctxTheme">🌗 切换主题</button>
+    <button class="ctx-item" id="ctxGlass">🧊 毛玻璃开关</button>
+    <button class="ctx-item" id="ctxParticles">✨ 粒子流开关</button>
+    <button class="ctx-item" id="ctxLog">📜 打开日志</button>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
+
+
+

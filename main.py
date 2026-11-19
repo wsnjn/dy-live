@@ -144,18 +144,18 @@ if __name__ == '__main__':
 
     # 3 搜索指定关键词的作品
     query = "榴莲"
-    require_num = 20  # 搜索的数量
+    require_num = 5  # 搜索的数量（演示用 5 个，加快速度）
     sort_type = '0'  # 排序方式 0 综合排序, 1 最多点赞, 2 最新发布
     publish_time = '0'  # 发布时间 0 不限, 1 一天内, 7 一周内, 180 半年内
     filter_duration = ""  # 视频时长 空字符串 不限, 0-1 一分钟内, 1-5 1-5分钟内, 5-10000 5分钟以上
     search_range = "0"  # 搜索范围 0 不限, 1 最近看过, 2 还未看过, 3 关注的人
     content_type = "0"  # 内容形式 0 不限, 1 视频, 2 图文
 
-    # data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
+    data_spider.spider_some_search_work(auth, query, require_num, base_path, 'all', sort_type, publish_time, filter_duration, search_range, content_type)
 
-    # 4 私信：用户链接转 uid 后建对话发一条
-    user_url = 'https://www.douyin.com/user/MS4wLjABAAAAaB23ankxsw7PIgXnKxCcLC9iJIadZMQQpS-KWVO8Y306zOksK9cUvT5QdoOIcsS6?from_tab_name=live'
-    content = "在吗"
-    to_user_id = DouyinAPI.get_user_info(auth, user_url)['user']['uid']
-    conversation_id, conversation_short_id, ticket = DouyinAPI.create_conversation(auth, to_user_id)
-    DouyinAPI.send_msg(auth, conversation_id, conversation_short_id, ticket, content)
+    # # 4 私信：用户链接转 uid 后建对话发一条（如需发私信，取消下面注释）
+    # user_url = 'https://www.douyin.com/user/MS4wLjABAAAAaB23ankxsw7PIgXnKxCcLC9iJIadZMQQpS-KWVO8Y306zOksK9cUvT5QdoOIcsS6?from_tab_name=live'
+    # content = "在吗"
+    # to_user_id = DouyinAPI.get_user_info(auth, user_url)['user']['uid']
+    # conversation_id, conversation_short_id, ticket = DouyinAPI.create_conversation(auth, to_user_id)
+    # DouyinAPI.send_msg(auth, conversation_id, conversation_short_id, ticket, content)
